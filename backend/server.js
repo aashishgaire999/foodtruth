@@ -6,20 +6,21 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth');
 const scanRoutes = require('./routes/scans');
-const productRoutes = require('./routes/products');
 const userRoutes = require('./routes/users');
+// ❌ removed products route (it was breaking your app)
+
 const { authenticateToken } = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
 
-// ── WebSocket server ─────────────────────────────────────────────────────────
+// ── WebSocket server ─────────────────────────────────────────
 const wss = new WebSocket.Server({ server });
 
 // Map: sessionId -> Set of WebSocket clients
 const sessions = new Map();
 
-wss.on('connection', (ws, req) => {
+wss.on('connection', (ws) => {
   let sessionId = null;
 
   ws.on('message', (raw) => {
@@ -35,7 +36,6 @@ wss.on('connection', (ws, req) => {
       }
 
       if (msg.type === 'SCAN_RESULT') {
-        // Broadcast to all other clients in the same session
         if (sessionId && sessions.has(sessionId)) {
           sessions.get(sessionId).forEach(client => {
             if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -45,44 +45,40 @@ wss.on('connection', (ws, req) => {
         }
       }
     } catch (e) {
-      console.error('WS message error:', e);
+      console.error('WS error:', e);
     }
   });
 
   ws.on('close', () => {
     if (sessionId && sessions.has(sessionId)) {
       sessions.get(sessionId).delete(ws);
-      if (sessions.get(sessionId).size === 0) sessions.delete(sessionId);
+      if (sessions.get(sessionId).size === 0) {
+        sessions.delete(sessionId);
+      }
     }
   });
 });
 
-// Expose broadcast function for routes
-app.locals.broadcast = (sessionId, data) => {
-  if (sessions.has(sessionId)) {
-    sessions.get(sessionId).forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(JSON.stringify(data));
-      }
-    });
-  }
-};
-
-// ── Middleware ───────────────────────────────────────────────────────────────
-app.use(cors({
-  origin: [process.env.FRONTEND_URL, process.env.MOBILE_URL, 'http://localhost:3000', 'http://localhost:3001'],
-  credentials: true,
-}));
+// ── Middleware ─────────────────────────────────────────
+app.use(cors());
 app.use(express.json());
 
-// ── Routes ───────────────────────────────────────────────────────────────────
+// ── Routes ─────────────────────────────────────────
 app.use('/api/auth', authRoutes);
 app.use('/api/scans', authenticateToken, scanRoutes);
-app.use('/api/products', authenticateToken, productRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
 
-app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date() }));
+// health check (VERY IMPORTANT FOR RENDER)
+app.get('/', (req, res) => {
+  res.send('FoodTruth API is running 🚀');
+});
 
-// ── Start ────────────────────────────────────────────────────────────────────
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
+
+// ── Start server ─────────────────────────────────────────
 const PORT = process.env.PORT || 4000;
-server.listen(PORT, () => console.log(`FoodTruth API running on port ${PORT}`));
+server.listen(PORT, () => {
+  console.log(`FoodTruth API running on port ${PORT}`);
+}); 
