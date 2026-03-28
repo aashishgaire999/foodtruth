@@ -20,6 +20,13 @@
   .sidebar {
     display: none;
   }
+.page {
+  display: none;
+}
+
+.page.active {
+  display: flex;
+}
 
   .two-col {
     grid-template-columns: 1fr;
@@ -208,7 +215,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
-  <div class="logo" onclick="setPage('dashboard')" style="cursor:pointer;">
+<div class="logo" onclick="setPage('dashboard', document.querySelector('.nav-item'))" style="cursor:pointer;">
     <div class="logo-mark">F</div>
     <div class="logo-text">Food<span>Truth</span></div>
   </div>
@@ -250,55 +257,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
   <div class="content">
 
-    <!-- DASHBOARD PAGE -->
-    <div class="page active" id="page-dashboard">
-      <div id="reader" style="width:300px;margin-top:20px;"></div>
-      <div id="scan-result"></div>
-        <div class="stat-card"><div class="stat-label">Scans today</div><div class="stat-value" id="stat-scans" style="color:var(--green)">7</div><div class="stat-change up">+3 from yesterday</div></div>
-        <div class="stat-card"><div class="stat-label">Avg health score</div><div class="stat-value" id="stat-score">B+</div><div class="stat-change up">Improving this week</div></div>
-        <div class="stat-card"><div class="stat-label">Calories tracked</div><div class="stat-value" id="stat-cals" style="font-size:20px;font-family:'DM Mono'">1,240</div><div class="stat-change">of 2,000 goal</div></div>
-        <div class="stat-card"><div class="stat-label">Flags raised</div><div class="stat-value" id="stat-flags" style="color:var(--amber)">2</div><div class="stat-change">Additives detected</div></div>
-      </div>
-      <div class="two-col">
-        <div style="display:flex;flex-direction:column;gap:20px;">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Live scan feed</div><button class="panel-action" onclick="clearFeed()">Clear</button></div>
-            <div id="scan-feed"><div class="empty-state">No scans yet. Press "Simulate scan" or scan from your phone.</div></div>
-          </div>
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">Weekly health score</div></div>
-            <div class="mini-chart"><div class="chart-bars" id="weekly-chart"></div></div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:20px;">
-          <div class="panel">
-            <div class="panel-header"><div class="panel-title">My profile</div><button class="panel-action">Edit</button></div>
-            <div class="profile-section">
-              <div style="font-size:14px;font-weight:500">James Dawson</div>
-              <div style="font-size:12px;color:var(--text3);margin-top:2px">Goal: lose weight · pescatarian</div>
-              <div class="goal-bar-wrap"><div class="goal-label-row"><span>Daily calories</span><span>1,240 / 2,000</span></div><div class="goal-bar"><div class="goal-fill" style="width:62%;background:var(--green)"></div></div></div>
-              <div class="goal-bar-wrap"><div class="goal-label-row"><span>Protein</span><span>48g / 80g</span></div><div class="goal-bar"><div class="goal-fill" style="width:60%;background:var(--blue)"></div></div></div>
-              <div class="goal-bar-wrap"><div class="goal-label-row"><span>Sugar limit</span><span>22g / 30g</span></div><div class="goal-bar"><div class="goal-fill" style="width:73%;background:var(--amber)"></div></div></div>
-            </div>
-            <div class="profile-section">
-              <div style="font-size:11px;color:var(--text3);margin-bottom:5px">Allergens to flag</div>
-              <div class="allergy-tags"><span class="allergy-tag">Gluten</span><span class="allergy-tag">Soy</span><span class="allergy-tag">Tree nuts</span></div>
-            </div>
-          </div>
-          <div class="mobile-preview">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-              <span style="font-size:13px;font-weight:500">Phone preview</span>
-              <span style="font-size:11px;color:var(--green)"><span class="sync-dot" style="width:6px;height:6px;"></span> Connected</span>
-            </div>
-            <div class="mobile-frame"><div class="mobile-screen">
-              <div class="mobile-topbar"><span class="mobile-title-text">FoodTruth</span><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:block;animation:pulse 2s infinite"></span></div>
-              <div style="padding:6px"><button class="mobile-scan-btn" onclick="startScanner()">Scan food</button><div id="mobile-feed"></div></div>
-            </div></div>
-            <div class="conn-status">Scan from phone → appears here instantly</div>
-          </div>
-        </div>
-      </div>
-    </div>
+<div id="reader" style="width:300px;margin-top:20px;"></div>
+<div id="scan-result"></div>
+
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Scans today</div>
+    <div class="stat-value" id="stat-scans" style="color:var(--green)">7</div>
+    <div class="stat-change up">+3 from yesterday</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Avg health score</div>
+    <div class="stat-value" id="stat-score">B+</div>
+    <div class="stat-change up">Improving this week</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Calories tracked</div>
+    <div class="stat-value" id="stat-cals" style="font-size:20px;font-family:'DM Mono'">1,240</div>
+    <div class="stat-change">of 2,000 goal</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-label">Flags raised</div>
+    <div class="stat-value" id="stat-flags" style="color:var(--amber)">2</div>
+    <div class="stat-change">Additives detected</div>
+  </div>
+</div>
 
     <!-- SCAN HISTORY PAGE -->
     <div class="page" id="page-scans">
@@ -761,15 +747,25 @@ function renderTrendsBars() {
 }
 
 // ── Navigation ────────────────────────────────────────────────────────────────
-function setPage(id, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+function setPage(page, btn) {
+  // hide all pages
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+  });
 
-  const page = document.getElementById('page-' + id);
-  if (page) page.classList.add('active');
+  // show selected page
+  const selected = document.getElementById('page-' + page);
+  if (selected) {
+    selected.classList.add('active');
+  }
+
+  // update sidebar active button
+  document.querySelectorAll('.nav-item').forEach(b => {
+    b.classList.remove('active');
+  });
 
   if (btn) btn.classList.add('active');
-
+}
   const titles = {
     dashboard: 'Live dashboard',
     scans: 'Scan history',
@@ -782,7 +778,7 @@ function setPage(id, btn) {
 
   // 🔥 scroll to top
   document.querySelector('.content').scrollTop = 0;
-}
+
 
 function renderAiResult(items) {
   const container = document.getElementById("ai-output");
