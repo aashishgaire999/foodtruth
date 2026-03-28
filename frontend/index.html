@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>FoodTruth — Dashboard</title>
@@ -211,7 +213,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
       <div class="live-indicator"><span class="sync-dot"></span>Live feed</div>
     </div>
     <div class="topbar-right">
-      <button class="btn btn-green" onclick="simulateScan()">+ Simulate scan</button>
+      <button class="btn btn-green" onclick="startScanner()">📷 Scan Real Food</button>
       <div class="avatar">JD</div>
     </div>
   </div>
@@ -220,7 +222,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
     <!-- DASHBOARD PAGE -->
     <div class="page active" id="page-dashboard">
-      <div class="stats-row">
+      <div id="reader" style="width:300px;margin-top:20px;"></div>
+      <div id="scan-result"></div>
         <div class="stat-card"><div class="stat-label">Scans today</div><div class="stat-value" id="stat-scans" style="color:var(--green)">7</div><div class="stat-change up">+3 from yesterday</div></div>
         <div class="stat-card"><div class="stat-label">Avg health score</div><div class="stat-value" id="stat-score">B+</div><div class="stat-change up">Improving this week</div></div>
         <div class="stat-card"><div class="stat-label">Calories tracked</div><div class="stat-value" id="stat-cals" style="font-size:20px;font-family:'DM Mono'">1,240</div><div class="stat-change">of 2,000 goal</div></div>
@@ -259,7 +262,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
             </div>
             <div class="mobile-frame"><div class="mobile-screen">
               <div class="mobile-topbar"><span class="mobile-title-text">FoodTruth</span><span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:block;animation:pulse 2s infinite"></span></div>
-              <div style="padding:6px"><button class="mobile-scan-btn" onclick="simulateScan()">Scan food</button><div id="mobile-feed"></div></div>
+              <div style="padding:6px"><button class="mobile-scan-btn" onclick="startScanner()">Scan food</button><div id="mobile-feed"></div></div>
             </div></div>
             <div class="conn-status">Scan from phone → appears here instantly</div>
           </div>
@@ -532,6 +535,40 @@ function simulateScan() {
   addScanToFeed(p, true);
 }
 
+
+// 🔥 ADD THIS RIGHT HERE (below simulateScan)
+
+function startScanner() {
+  const scanner = new Html5QrcodeScanner("reader", {
+    fps: 10,
+    qrbox: 250
+  });
+
+  scanner.render((decodedText) => {
+    console.log("Scanned:", decodedText);
+
+    fetch(`https://world.openfoodfacts.org/api/v0/product/${decodedText}.json`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 1) {
+          const p = data.product;
+
+          const product = {
+            product_name: p.product_name || "Unknown",
+            brand: p.brands || "N/A",
+            score: "B",
+            calories: p.nutriments?.energy_kcal || 0,
+            flags: []
+          };
+
+          addScanToFeed(product, true);
+        } else {
+          alert("Product not found");
+        }
+      });
+  });
+}
+
 function clearFeed() {
   scanFeed = [];
   scanCount = 0; totalCal = 0; flagCount = 0;
@@ -584,6 +621,7 @@ function runAiAnalysis() {
   }, 1200);
 }
 
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
 renderFeed();
@@ -593,3 +631,24 @@ updateStats();
 </script>
 </body>
 </html>
+@media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-row {
+    grid-template-columns: 1fr;
+  }
+
+  .main {
+    width: 100%;
+  }
+
+  .content {
+    padding: 10px;
+  }
+}
