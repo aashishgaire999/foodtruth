@@ -200,7 +200,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
-  <div class="logo">
+  <div class="logo" onclick="setPage('dashboard')" style="cursor:pointer;">
     <div class="logo-mark">F</div>
     <div class="logo-text">Food<span>Truth</span></div>
   </div>
@@ -350,38 +350,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
     </div>
 
     <!-- SETTINGS PAGE -->
-    <div class="page" id="page-settings">
-      <div class="settings-grid">
-        <div class="settings-section">
-          <div class="settings-title">Account</div>
-          <div class="settings-row"><span class="settings-label">Name</span><span class="settings-val">James Dawson</span></div>
-          <div class="settings-row"><span class="settings-label">Email</span><span class="settings-val" style="font-size:12px">james@example.com</span></div>
-          <div class="settings-row"><span class="settings-label">Session ID</span><span style="font-size:11px;font-family:'DM Mono';color:var(--text3)">FT-8A3K</span></div>
-          <div class="settings-row"><span class="settings-label">Plan</span><span class="settings-val" style="color:var(--green)">Free</span></div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-title">Goals</div>
-          <div class="settings-row"><span class="settings-label">Calorie goal</span><span class="settings-val">2,000 kcal</span></div>
-          <div class="settings-row"><span class="settings-label">Protein goal</span><span class="settings-val">80g</span></div>
-          <div class="settings-row"><span class="settings-label">Sugar limit</span><span class="settings-val">30g</span></div>
-          <div class="settings-row"><span class="settings-label">Diet type</span><span class="settings-val">Pescatarian</span></div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-title">Notifications</div>
-          <div class="settings-row"><span class="settings-label">Allergen alerts</span><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
-          <div class="settings-row"><span class="settings-label">Daily reminder</span><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
-          <div class="settings-row"><span class="settings-label">Weekly insights</span><button class="toggle" onclick="this.classList.toggle('on')"></button></div>
-          <div class="settings-row"><span class="settings-label">Laptop sync</span><button class="toggle on" onclick="this.classList.toggle('on')"></button></div>
-        </div>
-        <div class="settings-section">
-          <div class="settings-title">API connection</div>
-          <div class="settings-row"><span class="settings-label">Backend</span><span style="font-size:12px;color:var(--green)">● localhost:4000</span></div>
-          <div class="settings-row"><span class="settings-label">WebSocket</span><span style="font-size:12px;color:var(--green)">● Connected</span></div>
-          <div class="settings-row"><span class="settings-label">AI engine</span><span style="font-size:12px;color:var(--green)">● Claude API</span></div>
-          <div class="settings-row"><span class="settings-label">Food DB</span><span style="font-size:12px;color:var(--text2)">Open Food Facts</span></div>
-        </div>
-      </div>
-    </div>
+<div class="settings-section">
+  <div class="settings-title">API connection</div>
+
+  <div class="settings-row">
+    <span class="settings-label">Backend</span>
+    <span style="font-size:12px;color:var(--green)">
+      ● foodtruth-backend.onrender.com
+    </span>
+  </div>
+
+  <div class="settings-row">
+    <span class="settings-label">WebSocket</span>
+    <span style="font-size:12px;color:var(--green)">
+      ● Live Connected
+    </span>
+  </div>
+
+  <div class="settings-row">
+    <span class="settings-label">Scanner API</span>
+    <span style="font-size:12px;color:var(--green)">
+      ● OpenFoodFacts
+    </span>
+  </div>
+
+  <div style="font-size:11px;color:#aaa;margin-top:10px;">
+    Your app is connected to live backend 🚀
+  </div>
+</div>
 
     <!-- AI PAGE -->
     <div class="page" id="page-ai">
@@ -431,11 +427,66 @@ const newScanPool = [
   {product_name:"Kombucha",brand:"GT's",score:"A",calories:35,flags:[]},
 ];
 
-let scanFeed = [...demoProducts];
+let scanFeed = [
+  {
+    product_name: "Demo Product",
+    brand: "FoodTruth",
+    score: "B",
+    calories: 120,
+    flags: [],
+    scanned_at: new Date()
+  }
+];
 let scanPoolIdx = 0;
 let scanCount = demoProducts.length;
 let totalCal = demoProducts.reduce((a,p)=>a+p.calories,0);
 let flagCount = demoProducts.filter(p=>p.flags.length>0).length;
+
+function getHealthScore(product) {
+  let score = 100;
+
+  const sugar = product.nutriments?.sugars || 0;
+  const calories = product.nutriments?.energy_kcal || 0;
+  const ingredients = (product.ingredients_text || "").toLowerCase();
+
+  // sugar penalty
+  if (sugar > 20) score -= 30;
+  else if (sugar > 10) score -= 15;
+
+  // calories penalty
+  if (calories > 400) score -= 20;
+
+  // bad ingredients
+  if (ingredients.includes("palm oil")) score -= 15;
+  if (ingredients.includes("aspartame")) score -= 20;
+  if (ingredients.includes("hfcs")) score -= 25;
+
+  // convert score to grade
+  if (score >= 80) return "A";
+  if (score >= 60) return "B";
+  if (score >= 40) return "C";
+  return "D";
+}
+
+function getHealthExplanation(product) {
+  const issues = [];
+  const good = [];
+
+  const sugar = product.nutriments?.sugars || 0;
+  const calories = product.nutriments?.energy_kcal || 0;
+  const ingredients = (product.ingredients_text || "").toLowerCase();
+
+  if (sugar > 20) issues.push("High sugar");
+  else if (sugar < 5) good.push("Low sugar");
+
+  if (calories > 400) issues.push("High calories");
+  else if (calories < 150) good.push("Low calorie");
+
+  if (ingredients.includes("aspartame")) issues.push("Contains aspartame");
+  if (ingredients.includes("palm")) issues.push("Contains palm oil");
+
+  return { issues, good };
+}
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 let ws;
@@ -490,30 +541,44 @@ function timeAgo(date) {
 }
 function renderScanItem(p, isNew) {
   const s = scoreStyle(p.score);
-  const flags = (p.flags||[]);
+  const flags = (p.flags || []);
+
+  // 🔴 bad flags
   const flagHtml = flags.length
-    ? flags.map(f=>`<span class="flag-pill ${flagClass(f)}">${f}</span>`).join('')
+    ? flags.map(f => `<span class="flag-pill ${flagClass(f)}">${f}</span>`).join('')
     : '<span class="flag-pill flag-ok">Clean</span>';
-  return `<div class="scan-item${isNew?' new-scan':''}">
+
+  // 🟢 good things
+  const goodHtml = (p.good || []).map(g =>
+    `<span class="flag-pill flag-ok">${g}</span>`
+  ).join('');
+
+  return `<div class="scan-item${isNew ? ' new-scan' : ''}">
     <div class="score-badge" style="background:${s.bg};color:${s.color}">${p.score}</div>
+
     <div class="scan-info">
       <div class="scan-name">${p.product_name}</div>
       <div class="scan-meta">${p.brand}</div>
-      <div>${flagHtml}</div>
+
+      <div>
+        ${flagHtml}
+        ${goodHtml}
+      </div>
     </div>
+
     <div class="scan-right">
       <div class="scan-cal">${p.calories} kcal</div>
-      <div class="scan-time">${timeAgo(p.scanned_at||Date.now())}</div>
+      <div class="scan-time">${timeAgo(p.scanned_at || Date.now())}</div>
     </div>
   </div>`;
 }
 
 function renderFeed() {
   const feed = document.getElementById('scan-feed');
-  if (!scanFeed.length) { feed.innerHTML='<div class="empty-state">No scans yet.</div>'; return; }
-  feed.innerHTML = scanFeed.map((p,i)=>renderScanItem(p,i===0&&scanFeed[0]._new)).join('');
-  renderMobileFeed();
-  renderHistoryFeed();
+  if (!scanFeed.length) {
+  feed.innerHTML = '<div class="empty-state">Scan something to see history 📷</div>';
+  return;
+}
 }
 
 function renderMobileFeed() {
@@ -546,7 +611,12 @@ function addScanToFeed(p, isNew) {
   scanCount++;
   totalCal += (p.calories||0);
   if ((p.flags||[]).length > 0) flagCount++;
+  localStorage.setItem("foodtruth_scans", JSON.stringify(scanFeed));
   updateStats();
+  const saved = localStorage.getItem("foodtruth_scans");
+if (saved) {
+  scanFeed = JSON.parse(saved);
+}
   renderFeed();
   setTimeout(()=>{ if(scanFeed[0]) delete scanFeed[0]._new; },600);
 }
@@ -575,15 +645,21 @@ function startScanner() {
         if (data.status === 1) {
           const p = data.product;
 
+          // ✅ get explanation first
+          const explanation = getHealthExplanation(p);
+
+          // ✅ clean product object
           const product = {
             product_name: p.product_name || "Unknown",
             brand: p.brands || "N/A",
-            score: "B",
+            score: getHealthScore(p),
             calories: p.nutriments?.energy_kcal || 0,
-            flags: []
+            flags: explanation.issues,
+            good: explanation.good
           };
 
           addScanToFeed(product, true);
+
         } else {
           alert("Product not found");
         }
@@ -621,12 +697,26 @@ function renderTrendsBars() {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function setPage(id, btn) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+
+  const page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+
   if (btn) btn.classList.add('active');
-  const titles = {dashboard:'Live dashboard',scans:'Scan history',trends:'Trends & analytics',settings:'Settings',ai:'AI analysis'};
-  document.getElementById('page-title').textContent = titles[id]||id;
+
+  const titles = {
+    dashboard: 'Live dashboard',
+    scans: 'Scan history',
+    trends: 'Trends & analytics',
+    settings: 'Settings',
+    ai: 'AI analysis'
+  };
+
+  document.getElementById('page-title').textContent = titles[id] || id;
+
+  // 🔥 scroll to top
+  document.querySelector('.content').scrollTop = 0;
 }
 
 function runAiAnalysis() {
