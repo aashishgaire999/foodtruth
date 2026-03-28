@@ -2,11 +2,19 @@
 <html lang="en">
 <head>
 
+<head>
 <script src="https://unpkg.com/html5-qrcode"></script>
+
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="theme-color" content="#0a0a0a">
+
 <title>FoodTruth — Dashboard</title>
+
+<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/1046/1046784.png">
+
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
 <style>
 @media (max-width: 768px) {
   .sidebar {
@@ -351,31 +359,59 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
     <!-- SETTINGS PAGE -->
 <div class="settings-section">
-  <div class="settings-title">API connection</div>
+  <div class="settings-title">Profile</div>
 
   <div class="settings-row">
-    <span class="settings-label">Backend</span>
-    <span style="font-size:12px;color:var(--green)">
-      ● foodtruth-backend.onrender.com
-    </span>
+    <span class="settings-label">Name</span>
+    <span class="settings-val">User</span>
   </div>
 
   <div class="settings-row">
-    <span class="settings-label">WebSocket</span>
-    <span style="font-size:12px;color:var(--green)">
-      ● Live Connected
-    </span>
+    <span class="settings-label">Goal</span>
+    <span class="settings-val">Weight Loss</span>
+  </div>
+
+  <div class="settings-row">
+    <span class="settings-label">Daily Calories</span>
+    <span class="settings-val">2000 kcal</span>
+  </div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-title">Preferences</div>
+
+  <div class="settings-row">
+    <span class="settings-label">Allergen Alerts</span>
+    <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+  </div>
+
+  <div class="settings-row">
+    <span class="settings-label">AI Suggestions</span>
+    <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+  </div>
+
+  <div class="settings-row">
+    <span class="settings-label">Dark Mode</span>
+    <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+  </div>
+</div>
+
+<div class="settings-section">
+  <div class="settings-title">System Status</div>
+
+  <div class="settings-row">
+    <span class="settings-label">Backend</span>
+    <span style="color:#3ddc84">● Connected</span>
   </div>
 
   <div class="settings-row">
     <span class="settings-label">Scanner API</span>
-    <span style="font-size:12px;color:var(--green)">
-      ● OpenFoodFacts
-    </span>
+    <span style="color:#3ddc84">● OpenFoodFacts</span>
   </div>
 
-  <div style="font-size:11px;color:#aaa;margin-top:10px;">
-    Your app is connected to live backend 🚀
+  <div class="settings-row">
+    <span class="settings-label">Storage</span>
+    <span style="color:#3ddc84">● Local Saved</span>
   </div>
 </div>
 
@@ -554,7 +590,18 @@ function renderScanItem(p, isNew) {
   ).join('');
 
   return `<div class="scan-item${isNew ? ' new-scan' : ''}">
-    <div class="score-badge" style="background:${s.bg};color:${s.color}">${p.score}</div>
+    <div style="
+  background:${s.bg};
+  color:${s.color};
+  padding:12px;
+  border-radius:12px;
+  font-size:18px;
+  font-weight:600;
+  width:60px;
+  text-align:center;
+">
+  ${p.score}
+</div>
 
     <div class="scan-info">
       <div class="scan-name">${p.product_name}</div>
@@ -627,14 +674,30 @@ function simulateScan() {
   addScanToFeed(p, true);
 }
 
+function autoRunAI(product) {
+  const ingredientsText =
+    product.product_name + " " + (product.flags || []).join(" ");
+
+  document.getElementById("ai-input").value = ingredientsText;
+
+  runAiAnalysis();
+}
 
 // 🔥 ADD THIS RIGHT HERE (below simulateScan)
 
 function startScanner() {
+  alert("✅ Product scanned successfully!");
   const scanner = new Html5QrcodeScanner("reader", {
     fps: 10,
     qrbox: 250
   });
+
+  <div class="empty-state">
+  <h3>No scans yet</h3>
+  <p>Start scanning food to see insights 📷</p>
+</div>
+
+document.getElementById("scan-result").innerHTML = "🔍 Scanning product...";
 
   scanner.render((decodedText) => {
     console.log("Scanned:", decodedText);
@@ -659,6 +722,8 @@ function startScanner() {
           };
 
           addScanToFeed(product, true);
+          autoRunAI(product);
+          setPage('ai');
 
         } else {
           alert("Product not found");
@@ -719,20 +784,91 @@ function setPage(id, btn) {
   document.querySelector('.content').scrollTop = 0;
 }
 
-function runAiAnalysis() {
-  const input = document.getElementById('ai-input').value.trim();
-  if (!input) return;
-  const out = document.getElementById('ai-output');
-  out.innerHTML = '<span style="color:var(--text3)">Analyzing with AI...</span>';
-  // In production: POST to /api/ai/analyze
-  setTimeout(()=>{
-    out.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:14px;">
-      <div style="font-size:11px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px;color:var(--green);margin-bottom:8px">AI Truth Engine</div>
-      <div>Based on the ingredients provided: this product contains multiple synthetic additives. Key concerns: <span style="color:var(--amber)">high sugar content</span> and potential <span style="color:var(--red)">artificial preservatives</span>. Recommend checking for HFCS, artificial colors, and sodium levels before regular consumption.</div>
-    </div>`;
-  }, 1200);
+function renderAiResult(items) {
+  const container = document.getElementById("ai-output");
+
+  if (!items.length) {
+    container.innerHTML = "<p>No issues found ✅</p>";
+    return;
+  }
+
+  container.innerHTML = `
+    <div style="background:#111;padding:15px;border-radius:10px">
+      <h3 style="margin-bottom:10px">Ingredients Analysis (${items.length})</h3>
+      ${items.map(item => {
+        let color, bg;
+
+        if (item.type === "good") {
+          color = "#3ddc84";
+          bg = "rgba(61,220,132,0.1)";
+        } else {
+          color = "#f5a623";
+          bg = "rgba(245,166,35,0.1)";
+        }
+
+        return `
+          <div style="background:${bg};padding:12px;border-radius:8px;margin-bottom:10px">
+            <strong style="color:${color}">${item.name}</strong>
+            <div style="font-size:13px;margin-top:4px">${item.desc}</div>
+
+            ${item.reason ? `
+              <div style="margin-top:8px;color:#ff5f57;font-size:12px">
+                ⚠️ Why it harms you: ${item.reason}
+              </div>
+            ` : ""}
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
 }
 
+function runAiAnalysis() {
+  const input = document.getElementById('ai-input').value.toLowerCase();
+
+  const items = [];
+
+  function addItem(name, type, desc, reason="") {
+    items.push({ name, type, desc, reason });
+  }
+
+  // 🟢 GOOD
+  if (input.includes("oats")) {
+    addItem("Whole Grain Oats", "good",
+      "Good source of fiber and complex carbs");
+  }
+
+  if (input.includes("honey")) {
+    addItem("Honey", "good",
+      "Natural sweetener with trace nutrients");
+  }
+
+  if (input.includes("lecithin")) {
+    addItem("Soy Lecithin", "good",
+      "Common emulsifier, generally safe");
+  }
+
+  // 🟡 WARNING
+  if (input.includes("sugar")) {
+    addItem("Sugar", "warn",
+      "Added sugar — high intake",
+      "Excess sugar spikes blood glucose, causes energy crashes, and can lead to weight gain and tooth decay.");
+  }
+
+  if (input.includes("oil")) {
+    addItem("Canola Oil", "warn",
+      "Highly processed vegetable oil",
+      "Processed at high heat which may produce unhealthy fats and inflammation.");
+  }
+
+  if (input.includes("flavor")) {
+    addItem("Natural Flavor", "warn",
+      "Vague term — hidden compounds",
+      "May contain multiple chemical compounds and hides real ingredients.");
+  }
+
+  renderAiResult(items);
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
